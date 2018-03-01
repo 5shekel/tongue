@@ -19,9 +19,6 @@
   attiny85 pinout - https://camo.githubusercontent.com/081b569122da2244ff7de8bae15eb56947d05cc8/687474703a2f2f6472617a7a792e636f6d2f652f696d672f50696e6f7574543835612e6a7067
  *******************************************************************/
 
-
-#define DEBUG 1
-
 #define SERVO1PIN 0   // Servo control line (orange) on 0/PWM
 #define POTPIN   A3  // Potentiometer on A3
 #define TXPIN 1 // tested on PB1/PB4
