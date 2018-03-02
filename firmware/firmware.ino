@@ -1,7 +1,7 @@
 /*******************************************************************
 
    words http://idiot.io
-   code https://github.com/shenkarSElab/xxx
+   code https://github.com/shenkarSElab/tongue
 
    pin out attiny85
    NC      -1+----+8-   VCC
@@ -18,6 +18,7 @@
 
   attiny85 pinout - https://camo.githubusercontent.com/081b569122da2244ff7de8bae15eb56947d05cc8/687474703a2f2f6472617a7a792e636f6d2f652f696d672f50696e6f7574543835612e6a7067
  *******************************************************************/
+#include "funcs.h"
 #include <EEPROM.h>
 
 #define SERVO1PIN 0   // Servo control line (orange) on 0/PWM
@@ -92,7 +93,8 @@ void loop()  {
   // map the range of pot to limited map range on the servo.
   // a narrow band of the full range.
   // in both directions, with a stop space in middle
-
+  tongueDiff(potValue);
+/*
   if ( potValue < 350 ) {
     servoPos = map(potValue, 0, 350, 20, 80); //the88p0 has less
   } else if (potValue > 650) {
@@ -100,7 +102,7 @@ void loop()  {
   } else {
     servoPos = pos_middle ;// 82; //86 with the 880
   }
-
+*/
 
   //to calibrate override the above
   //servoPos = map(potValue, 0, 1024, 0, 179);
@@ -115,3 +117,8 @@ void loop()  {
   SoftwareServo::refresh();
   delay(15);                              // waits 15ms for the servo to reach the position
 }
+
+
+
+
+
