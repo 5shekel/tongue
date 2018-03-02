@@ -18,6 +18,7 @@
 
   attiny85 pinout - https://camo.githubusercontent.com/081b569122da2244ff7de8bae15eb56947d05cc8/687474703a2f2f6472617a7a792e636f6d2f652f696d672f50696e6f7574543835612e6a7067
  *******************************************************************/
+#include <EEPROM.h>
 
 #define SERVO1PIN 0   // Servo control line (orange) on 0/PWM
 #define POTPIN   A3  // Potentiometer on A3
@@ -40,10 +41,14 @@ long lastPressTime = 0;
 int pos_middle = 82;
 
 void setup() {
+
   irrecv.enableIRIn();
 
   softSerial.begin(9600);
-  softSerial.println("hell");
+  softSerial.print("reboot\n");
+
+  EEPROM.get(0, pos_middle );
+  softSerial.println(pos_middle);
 
   softServo.attach(SERVO1PIN);
   softServo.setMaximumPulse(2200);
@@ -55,16 +60,22 @@ void loop()  {
   if (irrecv.decode(&results)) {
     switch (results.value) {
       case 0xFFA25D:
-        softSerial.println("CH-");
+        softSerial.print("[CH-] pos_mid "); softSerial.println(pos_middle);
         pos_middle--;
         break;
       case 0xFFE21D:
-        softSerial.println("CH+");
+        softSerial.print("[CH+] posmid  "); softSerial.println(pos_middle);
         pos_middle++;
         break;
       case 0xFF629D:
-        softSerial.println("CH");
+        EEPROM.put(0, pos_middle );
+        softSerial.print("[CH] write "); softSerial.println(pos_middle);
         break;
+      case 0xFF906F:
+        softSerial.print("value dump\n");
+        softSerial.print("pos_middle  -  "); softSerial.println(pos_middle);
+        softSerial.println();
+
       case 0xFFFFFFFF:
         break;
       default:
