@@ -28,7 +28,7 @@
 
 #include "SoftwareServo.h"
 SoftwareServo softServo;  // create servo object to control a servo
-int prevServoPos;
+int prevpotValue;
 
 #include "SendOnlySoftwareSerial.h"
 SendOnlySoftwareSerial softSerial (TXPIN);  // Tx pin
@@ -40,14 +40,13 @@ unsigned long  prevValue;
 long lastPressTime = 0;
 
 int pos_middle = 82;
-int trimVal = 0; //soft calbrate cneter
+int runningDelta = 0; //soft calbrate cneter
 
 int PROG = 1;
 int outPos;
 
-int servoPos;
-  int potValue;
-  
+int servoPos, potValue, gestrue01;
+
 void setup() {
 
   irrecv.enableIRIn();
@@ -55,11 +54,11 @@ void setup() {
   softSerial.begin(9600);
   softSerial.print("reboot\n");
 
-  EEPROM.get(0, pos_middle );
-  softSerial.println(pos_middle);
+  EEPROM.get(0, runningDelta );
+  softSerial.println(runningDelta);
 
-  //EEPROM.get(1, trimVal );
-  softSerial.println(trimVal);
+  //EEPROM.get(1, runningDelta );
+  softSerial.println(runningDelta);
 
   softServo.attach(SERVO1PIN);
   softServo.setMaximumPulse(2200);
@@ -70,37 +69,48 @@ void setup() {
 void loop()  {
   if (irrecv.decode(&results)) {
     switch (results.value) {
-      case 0xFFA25D:
-        softSerial.print("[CH-] pos_mid "); softSerial.println(trimVal);
-        trimVal--;
-
-        softSerial.print(servoPos); softSerial.print(" ");
-        softSerial.print(trimVal); softSerial.print(" ");
-        softSerial.print(outPos); softSerial.print(" ");
-        softSerial.print(potValue); softSerial.print(" ");
-        softSerial.println();
-
+      case 0xFF30CF:
+        gestrue01 = potValue;
+        softSerial.print("[1 forced learning gestrue01:] "); softSerial.println(gestrue01);
         break;
-      case 0xFFE21D:
-        softSerial.print("[CH+] posmid  "); softSerial.println(trimVal);
-        trimVal++;
 
-        softSerial.print(servoPos); softSerial.print(" ");
-        softSerial.print(trimVal); softSerial.print(" ");
-        softSerial.print(outPos); softSerial.print(" ");
-        softSerial.print(potValue); softSerial.print(" ");
-        softSerial.println();
+      case 0xFF6897:
+        //potValue is the raw input from sensor
+        // gestrue01 is the pre recorded "forced learning" value
+        //
+        /*
+          //write the diff between natural middle and forced learning
+          value dump [in forced learning stable]
+          servoPos  runningDelta   potValue  potValue
+          69        0         69            278
 
-        break;
-      case 0xFF629D:
-        EEPROM.put(0, trimVal );
-        softSerial.print("[CH] write "); softSerial.println(trimVal);
+          value dump [naturla pos]
+          servoPos  runningDelta   potValue  potValue
+          129       0         129           516
+
+          == example usage
+          [EQ] - value dump 0xFF906F
+          servoPos runningDelta potValue potValue
+          81       0       81          324
+
+          [1 gestrue01] 79
+
+          [0 runningDelta] 35
+
+          [EQ] - value dump 0xFF906F
+          servoPos runningDelta potValue potValue
+          80        35       115         461
+
+
+        */
+        runningDelta = potValue - gestrue01;
+        EEPROM.put(0, runningDelta);
+        softSerial.print("[0 runningDelta (potValue - gestrue01)"); softSerial.println(runningDelta);
         break;
 
       case 0xFF906F:
-        softSerial.print("value dump\n");
-        softSerial.print("pos_middle  -  "); softSerial.println(pos_middle);
-        softSerial.println();
+        softSerial.println("[EQ] - value dump 0xFF906F");
+        printDebug();
 
       case 0xFFFFFFFF:
         break;
@@ -108,59 +118,16 @@ void loop()  {
         softSerial.print(F("unknown = 0x"));
         softSerial.println(results.value, HEX);
     }
-    irrecv.resume(); // Receive the next value
-
+    irrecv.resume(); 
   }
 
-  servoPos;
   potValue = analogRead(POTPIN);              // Read voltage on potentiometer
+  potValue = potValue / 4 ; //map(potValue, 0, 1024, 0, 179);
+  servoPos =  potValue - runningDelta;
 
-  // map the range of pot to limited map range on the servo.
-  // a narrow band of the full range.
-  // in both directions, with a stop space in middle
+  softServo.write(servoPos);
 
-  //tongueDiff(potValue);
-  /*
-    topSpeedL = 20;
-    topSpeedR = 150;
-    lowSpeedL = 80;
-    lowSpeedR = 90;
-  */
-
-  PROG = 2;
-  switch (PROG) {
-    case 1:
-      if ( potValue < 350 ) {
-        servoPos = map(potValue, 0, 350, 20, 80); //the88p0 has less
-      } else if (potValue > 650) {
-        servoPos = map(potValue, 650, 1024, 90, 150);
-      } else {
-        servoPos = pos_middle ;// 82; //86 with the 880
-      }
-
-      if (servoPos != prevServoPos) {
-        softSerial.print(servoPos); softSerial.print(" ");
-        softSerial.print(potValue); softSerial.print(" ");
-        softSerial.println();
-      }
-      prevServoPos = servoPos;
-
-      break;
-    case 2:
-      //to calibrate override the above
-      servoPos = potValue / 4 ; //map(servoPos, 0, 1024, 0, 179);
-      outPos = trimVal + servoPos;
-
-      //if (outPos != prevServoPos) {
-
-      //}
-      prevServoPos = outPos;
-      break;
-  }
-
-  softServo.write(outPos);
-
-  //analogWrite(SERVO1PIN, servoPos); //doesnt work, servo need PPM 0.5-2ms
+  //analogWrite(SERVO1PIN, potValue); //doesnt work, servo need PPM 0.5-2ms
 
   SoftwareServo::refresh();
   delay(15);                              // waits 15ms for the servo to reach the position
@@ -169,15 +136,33 @@ void loop()  {
 
 
 
+void     printDebug() {
+  softSerial.println(" servoPos runningDelta potValue potValue");
+  softSerial.print(servoPos); softSerial.print(" ");
+  softSerial.print(runningDelta); softSerial.print(" ");
+  softSerial.print(potValue); softSerial.print(" ");
+  softSerial.println();
+}
 
+//tongueDiff(potValue);
+
+// map the range of pot to limited map range on the servo.
+// a narrow band of the full range.
+// in both directions, with a stop space in middle
+/*
+  topSpeedL = 20;
+  topSpeedR = 150;
+  lowSpeedL = 80;
+  lowSpeedR = 90;
+*/
 byte tongueDiff(int val, byte mid, int  ) {
-  byte servoPos;
+  byte potValue;
   if ( val < 350 ) {
-    servoPos = map(val, 0, 350, 20, 80); //the88p0 has less
+    potValue = map(val, 0, 350, 20, 80); //the88p0 has less
   } else if (val > 650) {
-    servoPos = map(val, 1024, 650, 150, 90);
+    potValue = map(val, 1024, 650, 150, 90);
   } else {
-    servoPos = pos_middle ;// 82; //86 with the 880
+    potValue = pos_middle ;// 82; //86 with the 880
   }
-  return servoPos;
+  return potValue;
 }
