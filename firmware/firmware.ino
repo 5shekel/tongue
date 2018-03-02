@@ -52,12 +52,9 @@ void setup() {
   irrecv.enableIRIn();
 
   softSerial.begin(9600);
-  softSerial.print("reboot\n");
+  softSerial.println("reboot");
 
   EEPROM.get(0, runningDelta );
-  softSerial.println(runningDelta);
-
-  //EEPROM.get(1, runningDelta );
   softSerial.println(runningDelta);
 
   softServo.attach(SERVO1PIN);
@@ -67,45 +64,49 @@ void setup() {
 }
 
 void loop()  {
+  potValue = analogRead(POTPIN) / 4;
+
   if (irrecv.decode(&results)) {
     switch (results.value) {
       case 0xFF30CF:
         gestrue01 = potValue;
-        softSerial.print("[1 forced learning gestrue01:] "); softSerial.println(gestrue01);
+        softSerial.print("[1 learn gestrue01: ] "); softSerial.println(gestrue01);
+        printDebug();
         break;
 
       case 0xFF6897:
         //potValue is the raw input from sensor
-        // gestrue01 is the pre recorded "forced learning" value
+        // gestrue01 is the pre recorded "learning" value
         //
         /*
           //write the diff between natural middle and forced learning
           value dump [in forced learning stable]
-          servoPos  runningDelta   potValue  potValue
-          69        0         69            278
+          servoPos  runningDelta   potValue
+          69        0               69
 
           value dump [naturla pos]
-          servoPos  runningDelta   potValue  potValue
-          129       0         129           516
+          servoPos  runningDelta    potValue
+          129       0               129
 
           == example usage
           [EQ] - value dump 0xFF906F
-          servoPos runningDelta potValue potValue
-          81       0       81          324
+          servoPos runningDelta potValue
+          81       0             81
 
           [1 gestrue01] 79
 
           [0 runningDelta] 35
 
           [EQ] - value dump 0xFF906F
-          servoPos runningDelta potValue potValue
-          80        35       115         461
-
-
+          servoPos runningDelta potValue
+          80        35          115
         */
+        
         runningDelta = potValue - gestrue01;
         EEPROM.put(0, runningDelta);
-        softSerial.print("[0 runningDelta (potValue - gestrue01)"); softSerial.println(runningDelta);
+        softSerial.print("[0 new runningDelta: "); softSerial.println(runningDelta);
+
+        printDebug();
         break;
 
       case 0xFF906F:
@@ -118,11 +119,9 @@ void loop()  {
         softSerial.print(F("unknown = 0x"));
         softSerial.println(results.value, HEX);
     }
-    irrecv.resume(); 
+    irrecv.resume();
   }
 
-  potValue = analogRead(POTPIN);              // Read voltage on potentiometer
-  potValue = potValue / 4 ; //map(potValue, 0, 1024, 0, 179);
   servoPos =  potValue - runningDelta;
 
   softServo.write(servoPos);
@@ -137,10 +136,13 @@ void loop()  {
 
 
 void     printDebug() {
-  softSerial.println(" servoPos runningDelta potValue potValue");
-  softSerial.print(servoPos); softSerial.print(" ");
-  softSerial.print(runningDelta); softSerial.print(" ");
-  softSerial.print(potValue); softSerial.print(" ");
+  softSerial.println("potValue gestrue01 runningDelta servoPos");
+  softSerial.print(potValue); softSerial.print("    ");
+    softSerial.print(gestrue01); softSerial.print("    ");
+
+  
+  softSerial.print(runningDelta); softSerial.print("      ");
+  softSerial.print(servoPos); softSerial.print("      ");
   softSerial.println();
 }
 
