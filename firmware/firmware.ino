@@ -22,13 +22,12 @@
 #include <EEPROM.h>
 
 #define SERVO1PIN 0   // Servo control line (orange) on 0/PWM
-#define POTPIN   A3  // Potentiometer on A3
-#define TXPIN 1 // tested on PB1/PB4
-#define RECVPIN  4 //ir reciver data pin , tested on PB1/PB4
+#define TXPIN     1 // tested on PB1/PB4
+#define POTPIN    3  // Potentiometer on A3
+#define RECVPIN   4 //ir reciver data pin , tested on PB1/PB4
 
 #include "SoftwareServo.h"
 SoftwareServo softServo;  // create servo object to control a servo
-int prevpotValue;
 
 #include "SendOnlySoftwareSerial.h"
 SendOnlySoftwareSerial softSerial (TXPIN);  // Tx pin
@@ -37,14 +36,9 @@ SendOnlySoftwareSerial softSerial (TXPIN);  // Tx pin
 IRrecv irrecv(RECVPIN);
 decode_results results;
 unsigned long  prevValue;
-long lastPressTime = 0;
 
-int pos_middle = 82;
+int pos_middle = 0;
 int runningDelta = 0; //soft calbrate cneter
-
-int PROG = 1;
-int outPos;
-
 int servoPos, potValue, gestrue01;
 
 void setup() {
@@ -69,16 +63,17 @@ void loop()  {
   if (irrecv.decode(&results)) {
     switch (results.value) {
       case 0xFF30CF:
+
         gestrue01 = potValue;
         softSerial.print("[1 learn gestrue01: ] "); softSerial.println(gestrue01);
         printDebug();
         break;
 
       case 0xFF6897:
-        //potValue is the raw input from sensor
-        // gestrue01 is the pre recorded "learning" value
-        //
         /*
+          //potValue is the raw input from sensor
+          // gestrue01 is the pre recorded "learning" value
+          //
           //write the diff between natural middle and forced learning
           value dump [in forced learning stable]
           servoPos  runningDelta   potValue
@@ -101,11 +96,10 @@ void loop()  {
           servoPos runningDelta potValue
           80        35          115
         */
-        
+
         runningDelta = potValue - gestrue01;
         EEPROM.put(0, runningDelta);
         softSerial.print("[0 new runningDelta: "); softSerial.println(runningDelta);
-
         printDebug();
         break;
 
@@ -138,9 +132,9 @@ void loop()  {
 void     printDebug() {
   softSerial.println("potValue gestrue01 runningDelta servoPos");
   softSerial.print(potValue); softSerial.print("    ");
-    softSerial.print(gestrue01); softSerial.print("    ");
+  softSerial.print(gestrue01); softSerial.print("    ");
 
-  
+
   softSerial.print(runningDelta); softSerial.print("      ");
   softSerial.print(servoPos); softSerial.print("      ");
   softSerial.println();
