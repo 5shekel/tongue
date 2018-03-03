@@ -4,7 +4,7 @@
    code https://github.com/shenkarSElab/tongue
 
    pin out attiny85
-   NC      -1+----+8-   VCC
+   RST     -1+----+8-   VCC
    3/A3    -2|*   |7-   2/A1
    4/A4    -3|    |6-   1
    GND     -4+----+5-   0/PWM
