@@ -38,8 +38,8 @@ decode_results results;
 unsigned long  prevValue;
 
 int pos_middle = 0;
-int runningDelta = 0; //soft calbrate cneter
-int servoPos, potValue, gestrue01;
+int servoPos, potValue, servoSpeed;
+int runningDelta, gestrue01;
 
 void setup() {
 
@@ -48,8 +48,11 @@ void setup() {
   softSerial.begin(9600);
   softSerial.println("reboot");
 
-  EEPROM.get(0, runningDelta );
+  EEPROM.get(0, runningDelta);
   softSerial.println(runningDelta);
+  EEPROM.get(2, gestrue01 );
+  softSerial.println(gestrue01);
+
 
   softServo.attach(SERVO1PIN);
   softServo.setMaximumPulse(2200);
@@ -58,13 +61,23 @@ void setup() {
 }
 
 void loop()  {
-  potValue = analogRead(POTPIN) / 4;
 
   if (irrecv.decode(&results)) {
     switch (results.value) {
+      case 0xFFA857:
+        servoSpeed += 0.3;
+        softSerial.print("[+ servoSpeed: ] "); softSerial.println(servoSpeed);
+        printDebug();
+        break;
+      case 0xFFE01F:
+        servoSpeed -= 0.3;
+        softSerial.print("[- servoSpeed: ] "); softSerial.println(servoSpeed);
+        printDebug();
+        break;
       case 0xFF30CF:
 
         gestrue01 = potValue;
+        EEPROM.put(2, gestrue01);
         softSerial.print("[1 learn gestrue01: ] "); softSerial.println(gestrue01);
         printDebug();
         break;
@@ -115,11 +128,22 @@ void loop()  {
     }
     irrecv.resume();
   }
+  potValue = analogRead(POTPIN)/4 ;
+  //potValue = map(potValue, 0, 1024, 0, 179) ;
 
-  servoPos =  potValue - runningDelta;
-
+  servoPos =  potValue - runningDelta ;
+  /*
+  if ( val < 350 ) {
+    potValue = map(val, 0, 350, 20, 80); //the88p0 has less
+  } else if (val > 650) {
+    potValue = map(val, 1024, 650, 150, 90);
+  } else {
+    potValue = pos_middle ;// 82; //86 with the 880
+  }
+  */
+  
   softServo.write(servoPos);
-
+  softSerial.print(potValue); softSerial.println("    ");
   //analogWrite(SERVO1PIN, potValue); //doesnt work, servo need PPM 0.5-2ms
 
   SoftwareServo::refresh();
@@ -130,13 +154,13 @@ void loop()  {
 
 
 void     printDebug() {
-  softSerial.println("potValue gestrue01 runningDelta servoPos");
+  //softSerial.println("potValue gestrue01 runningDelta servoPos vlt");
   softSerial.print(potValue); softSerial.print("    ");
   softSerial.print(gestrue01); softSerial.print("    ");
-
-
   softSerial.print(runningDelta); softSerial.print("      ");
   softSerial.print(servoPos); softSerial.print("      ");
+  // softSerial.print(analogRead(POTPIN) * (5 / 1024)); softSerial.print("      ");
+
   softSerial.println();
 }
 
@@ -152,7 +176,7 @@ void     printDebug() {
   lowSpeedR = 90;
 */
 byte tongueDiff(int val, byte mid, int  ) {
-  byte potValue;
+  //byte potValue;
   if ( val < 350 ) {
     potValue = map(val, 0, 350, 20, 80); //the88p0 has less
   } else if (val > 650) {
