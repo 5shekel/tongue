@@ -143,7 +143,7 @@ void loop()  {
   */
   
   softServo.write(servoPos);
-  softSerial.print(potValue); softSerial.println("    ");
+  //softSerial.print(potValue); softSerial.println("    ");
   //analogWrite(SERVO1PIN, potValue); //doesnt work, servo need PPM 0.5-2ms
 
   SoftwareServo::refresh();
