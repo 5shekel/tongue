@@ -74,7 +74,7 @@ void setup() {
 }
 
 void loop()  {
-
+  //read IR signals
   if (irrecv.decode(&results)) {
     switch (results.value) {
       case 0xFFA25D:
@@ -115,15 +115,7 @@ void loop()  {
           graph_state=1;    
           
         break;
-      /*
-      case 0xFF7A85:
-        softSerial.println("3");
-        if (led_state)
-          graph_state=0;
-        else 
-          graph_state=1;     
-        break;
-        */
+
       case 0xFF6897:
         softSerial.println();
         softSerial.println("0");
@@ -156,12 +148,12 @@ void loop()  {
     irrecv.resume();
   }
 
-  potValue = analogRead(POTPIN);              // Read voltage on potentiometer
+  // Read voltage on LDR
+  potValue = analogRead(POTPIN);  
  
   //smoothing
   y = 0.10*potValue +0.75*y;
   servoPos = int(y)  ;
-  
   tmpval = int(mapped(servoPos));
   tmpval = constrain(tmpval, 0, 179);
 
@@ -169,9 +161,9 @@ void loop()  {
     prevValue = millis();
     softServo.write(tmpval);
 
-    //analogWrite(2, servoPos);
     SoftwareServo::refresh();
-	  //printdebug();
+    
+	  printdebug();
     printGraph();
   }
 
@@ -195,6 +187,7 @@ int mapped(int input){
 void printdebug(){};
 
 void printGraph(){};
+
   /*
 void printGraph(){
   if(graph_state){
