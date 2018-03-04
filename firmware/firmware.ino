@@ -37,9 +37,17 @@ IRrecv irrecv(RECVPIN);
 decode_results results;
 unsigned long  prevValue;
 
+<<<<<<< HEAD
 int pos_middle = 0;
 int runningDelta = 0; //soft calbrate cneter
 int servoPos, potValue, gestrue01;
+=======
+int pos_middle = 80;
+int servoPos;
+int potValue; 
+  
+float x_1,x_2, y;
+>>>>>>> refs/remotes/origin/master
 
 void setup() {
 
@@ -62,6 +70,7 @@ void loop()  {
 
   if (irrecv.decode(&results)) {
     switch (results.value) {
+<<<<<<< HEAD
       case 0xFF30CF:
 
         gestrue01 = potValue;
@@ -101,6 +110,21 @@ void loop()  {
         EEPROM.put(0, runningDelta);
         softSerial.print("[0 new runningDelta: "); softSerial.println(runningDelta);
         printDebug();
+=======
+      case 0xFFA25D:
+        softSerial.println("CH-");
+        pos_middle-=1;
+        printdebug();
+        break;
+      case 0xFFE21D:
+        softSerial.println("CH+");
+        pos_middle+=1;
+        printdebug();
+        break;
+      case 0xFF629D: 
+        softSerial.println("CH");
+        printdebug();
+>>>>>>> refs/remotes/origin/master
         break;
 
       case 0xFF906F:
@@ -116,6 +140,7 @@ void loop()  {
     irrecv.resume();
   }
 
+<<<<<<< HEAD
   servoPos =  potValue - runningDelta;
 
   softServo.write(servoPos);
@@ -162,3 +187,48 @@ byte tongueDiff(int val, byte mid, int  ) {
   }
   return potValue;
 }
+=======
+  potValue = analogRead(POTPIN);              // Read voltage on potentiometer
+ 
+  //smoothing
+  y = 0.10*potValue +0.75*y;
+  servoPos = (y+pos_middle)/4 ;;
+
+  if ( (servoPos > 70) && (servoPos < 85)) {
+    servoPos = pos_middle ;// 82; //86 with the 880
+  }
+  
+  if (millis() - prevValue >= 15) {
+    prevValue = millis();
+    softServo.write(servoPos);
+    SoftwareServo::refresh();
+	//printdebug();
+  }
+
+}
+
+void printdebug(){
+	//softSerial.println("pos_middle	servoPos	potValue");
+	
+	softSerial.print(pos_middle);
+	softSerial.print("	");
+	softSerial.print(servoPos);
+	softSerial.print("	");
+	softSerial.print(potValue);
+    softSerial.println();
+}
+
+
+/* // map the range of pot to limited map range on the servo.
+  // a narrow band of the full range.
+  // in both directions, with a stop space in middle
+
+  if ( potValue < 350 ) {
+    servoPos = map(potValue, 0, 350, 20, 80); //the88p0 has less
+  } else if (potValue > 650) {
+    servoPos = map(potValue, 1024, 650, 150, 90);
+  } else {
+    servoPos = pos_middle ;// 82; //86 with the 880
+  }
+*/
+>>>>>>> refs/remotes/origin/master
