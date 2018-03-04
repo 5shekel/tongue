@@ -23,6 +23,7 @@
 
 #define SERVO1PIN 0   // Servo control line (orange) on 0/PWM
 #define TXPIN     1 // tested on PB1/PB4
+#define LEDPIN    2 // led pin
 #define POTPIN    3  // Potentiometer on A3
 #define RECVPIN   4 //ir reciver data pin , tested on PB1/PB4
 
@@ -54,7 +55,9 @@ int graph_state = 0;
 
 void setup() {
 
-  //pinMode(2, OUTPUT);
+  pinMode(LEDPIN, OUTPUT);
+  digitalWrite(LEDPIN, LOW);
+
   irrecv.enableIRIn();
 
   softSerial.begin(9600);
@@ -112,6 +115,15 @@ void loop()  {
           graph_state=1;    
           
         break;
+      /*
+      case 0xFF7A85:
+        softSerial.println("3");
+        if (led_state)
+          graph_state=0;
+        else 
+          graph_state=1;     
+        break;
+        */
       case 0xFF6897:
         softSerial.println();
         softSerial.println("0");
@@ -170,14 +182,17 @@ int mapped(int input){
 	int output;
   if ( (input >= (set01.midval - 20) ) && (input <= (set01.midval + 20)) ){
 		output = 90-set01.trim ;
+    digitalWrite(LEDPIN, HIGH);
 	  } else if (input < (set01.midval - 20)){
 		output = map(input, set01.minval, set01.midval, 0, 90-set01.trim   );
-	  }else if(input > (set01.midval + 20)){
+    digitalWrite(LEDPIN, LOW);
+    }else if(input > (set01.midval + 20)){
 		output = map(input, set01.midval, set01.maxval, 90-set01.trim  , 179 );
-	}
+    digitalWrite(LEDPIN, LOW);	
+  }
 	return output;
 }
-//void printdebug(){};
+void printdebug(){};
 
 void printGraph(){};
   /*
@@ -192,7 +207,7 @@ void printGraph(){
   }
 }
 
-*/
+
 void printdebug(){
 	//softSerial.println("minval midval	maxval trim");
 	softSerial.print(set01.minval);
@@ -214,3 +229,4 @@ void printdebug(){
 
 }
 
+*/
