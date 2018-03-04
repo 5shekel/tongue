@@ -38,10 +38,14 @@ decode_results results;
 
 unsigned long  prevValue;
 
-int midval = 90;
-int minval = 50;
-int maxval = 400; 
-int trim = 0;
+struct settings {
+  int minval;
+  int midval;
+  int maxval; 
+  int trim;
+};
+settings set01 = {50,200,400,0 };
+
 int servoPos;
 int potValue, tmpval;
   
@@ -49,17 +53,16 @@ float x_1, y;
 int graph_state = 0;
 
 void setup() {
+
   //pinMode(2, OUTPUT);
   irrecv.enableIRIn();
 
   softSerial.begin(9600);
   softSerial.println("reboot");
-  /*
-  EEPROM.get(0, runningDelta);
-  softSerial.println(runningDelta);
-  EEPROM.get(2, gestrue01 );
-  softSerial.println(gestrue01);
-  */
+  
+  EEPROM.get(0, set01);
+  printdebug();
+  
 
   softServo.attach(SERVO1PIN);
   softServo.setMaximumPulse(2000);
@@ -73,45 +76,59 @@ void loop()  {
     switch (results.value) {
       case 0xFFA25D:
         softSerial.println("CH-");
-	      minval = servoPos;
-        
+	      set01.minval = servoPos;
         printdebug();
         break;
 
       case 0xFF629D: 
         softSerial.println("CH");
-	      midval = servoPos;
+	      set01.midval = servoPos;
         printdebug();
         break;
         
       case 0xFFE21D:
         softSerial.println("CH+");
-        maxval = servoPos;
+        set01.maxval = servoPos;
         printdebug();
         break;
 
       case 0xFFE01F:
-        softSerial.println("[-]");
-        trim++;
+        softSerial.println("-");
+        set01.trim++;
+        printdebug();
         break;
 
       case 0xFFA857:
-        softSerial.println("[+]");
-        trim--;
+        softSerial.println("+");
+        set01.trim--;
+        printdebug();
         break;
 
       case 0xFF52AD:
-        softSerial.println("[9]");
+        softSerial.println("9");
         if (graph_state)
           graph_state=0;
         else 
           graph_state=1;    
           
         break;
+      case 0xFF6897:
+        softSerial.println();
+        softSerial.println("0");
+        set01 = {50,200,400,0 };
+        printdebug();
+        break;
 
       case 0xFF906F:
         softSerial.println();
-        softSerial.println("[EQ] - value dump 0xFF906F");
+        softSerial.println("EQ");
+        printdebug();
+        break;
+
+      case 0xFFB04F:
+        softSerial.println();
+        softSerial.println("200");
+        EEPROM.put(0, set01);
         printdebug();
         break;
 
@@ -119,9 +136,11 @@ void loop()  {
         break;
 
       default:
-        softSerial.print(F("unknown = 0x"));
+        softSerial.print(F("0x"));
         softSerial.println(results.value, HEX);
     }
+            
+
     irrecv.resume();
   }
 
@@ -149,16 +168,16 @@ void loop()  {
 
 int mapped(int input){
 	int output;
-  if ( (input >= (midval - 20) ) && (input <= (midval + 20)) ){
-		output = 90-trim ;
-	  } else if (input < (midval - 20)){
-		output = map(input, minval, midval, 0, 90-trim   );
-	  }else if(input > (midval + 20)){
-		output = map(input, midval, maxval, 90-trim  , 179 );
+  if ( (input >= (set01.midval - 20) ) && (input <= (set01.midval + 20)) ){
+		output = 90-set01.trim ;
+	  } else if (input < (set01.midval - 20)){
+		output = map(input, set01.minval, set01.midval, 0, 90-set01.trim   );
+	  }else if(input > (set01.midval + 20)){
+		output = map(input, set01.midval, set01.maxval, 90-set01.trim  , 179 );
 	}
 	return output;
 }
-void printdebug(){};
+//void printdebug(){};
 
 void printGraph(){};
   /*
@@ -173,13 +192,16 @@ void printGraph(){
   }
 }
 
+*/
 void printdebug(){
-	//softSerial.println("minval midval	maxval");
-	softSerial.print(minval);
+	//softSerial.println("minval midval	maxval trim");
+	softSerial.print(set01.minval);
 	softSerial.print("	");
-	softSerial.print(midval);
+	softSerial.print(set01.midval);
 	softSerial.print("	");
-	softSerial.print(maxval);
+	softSerial.print(set01.maxval);
+  softSerial.print("	");
+	softSerial.print(set01.trim);
   softSerial.println();
 	
 	//softSerial.println("tmpval	servoPos	potValue");
@@ -190,12 +212,5 @@ void printdebug(){
 	softSerial.print(potValue);
   softSerial.println();
 
-  //softSerial.println("trim	xxx	xxx");
-	softSerial.print(trim);
-	softSerial.print("	");
-	softSerial.print("xxx");
-	softSerial.print("	");
-	softSerial.print("xxx");
-  softSerial.println();
 }
-*/
+
