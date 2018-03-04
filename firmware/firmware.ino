@@ -17,6 +17,35 @@
   ir_methods https://github.com/z3t0/Arduino-IRremote/wiki/Receiving-with-the-IRremote-library
 
   attiny85 pinout - https://camo.githubusercontent.com/081b569122da2244ff7de8bae15eb56947d05cc8/687474703a2f2f6472617a7a792e636f6d2f652f696d672f50696e6f7574543835612e6a7067
+ 
+ 
+ 
+  ==calibration==
+  the system has an intial guess for calibration, 
+  but you will need to fine tune it to compensate 
+  for diffrent material and lighting
+
+  [CH+] means press that key on remote
+  
+  *fine tune
+  cover LDR #1       press the [CH+] to set maxval
+  cover LDR #2       press the [CH-] to set minval
+  uncover both LDRs  press the [CH] to set midval
+
+  *trim
+  press [-] and [+] to subtract/add to trim value
+    after fine-tune you will have to trim the motor middle point
+    press until the motor doesnt turn or twitch in uncovered state.
+    ussualy no more then -/+10 is needed. 
+
+  *store
+  to put your settings in deep memory press the [200+] key
+    the setting you provide will be stored in ATtoni 
+    so they are remmbered and will  reboot.
+
+  *info
+  if DEBUG is on you can use the [EQ] button to watch your settings
+  you will need a serial pin connected to pin 6 
  *******************************************************************/
 
 #include <EEPROM.h>
@@ -119,7 +148,7 @@ void loop()  {
       case 0xFF6897:
         softSerial.println();
         softSerial.println("0");
-        set01 = {50,200,400,0 };
+        set01 = {50,200,500,0 };
         printdebug();
         break;
 
